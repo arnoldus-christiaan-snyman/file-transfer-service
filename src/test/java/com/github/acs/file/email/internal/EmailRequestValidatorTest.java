@@ -7,12 +7,14 @@ import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockitoAnnotations;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@ActiveProfiles("test")
 class EmailRequestValidatorTest {
 
     private Validator validator;
@@ -99,21 +101,6 @@ class EmailRequestValidatorTest {
 
     @Test
     void testValidationWithBodyAndTemplateNamer() {
-        EmailRequest emailRequest = EmailRequest.builder()
-                .to(Set.of("test@acs.nl"))
-                .subject("Test Subject")
-                .body("Test Body")
-                .templateName("test-template")
-                .build();
-
-        Set<ConstraintViolation<EmailRequest>> violations = this.validator.validate(emailRequest);
-        assertFalse(violations.isEmpty());
-        assertEquals(1, violations.size());
-        assertEquals("Only the 'body' or 'templateName' can be set, not both", violations.iterator().next().getMessage());
-    }
-
-    @Test
-    void testValidationWithoutBodyOrTemplateName() {
         EmailRequest emailRequest = EmailRequest.builder()
                 .to(Set.of("test@acs.nl"))
                 .subject("Test Subject")

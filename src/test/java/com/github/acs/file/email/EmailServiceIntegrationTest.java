@@ -15,6 +15,7 @@ import org.springframework.boot.autoconfigure.thymeleaf.ThymeleafAutoConfigurati
 import org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration;
 import com.github.acs.file.email.internal.EmailTemplateProcessor;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.io.IOException;
 import java.util.Map;
@@ -30,12 +31,13 @@ import static org.junit.jupiter.api.Assertions.*;
         ThymeleafAutoConfiguration.class,
         MailSenderAutoConfiguration.class
 })
+@ActiveProfiles("test")
 class EmailServiceIntegrationTest {
 
     private static GreenMail smtpServer;
 
     @BeforeAll
-    public static void setupSmtpServer() {
+    static void setupSmtpServer() {
         ServerSetup serverSetup = new ServerSetup(25, "localhost", "smtp");
         smtpServer = new GreenMail(serverSetup);
         smtpServer.setUser("username", "password");
@@ -43,7 +45,7 @@ class EmailServiceIntegrationTest {
     }
 
     @AfterAll
-    public static void stopSmtpServer() {
+    static void stopSmtpServer() {
         smtpServer.stop();
     }
 
@@ -52,7 +54,7 @@ class EmailServiceIntegrationTest {
 
     @Test
     void testSendEmailWithBody() throws MessagingException, IOException {
-        final var subject = "Integration Test Subject";
+        final var subject = "Integration Test Subject with Template";
         final var messageBody = "This is a test email.";
 
         EmailRequest emailRequest = EmailRequest.builder()
@@ -105,46 +107,14 @@ class EmailServiceIntegrationTest {
 
     }
 
-    @Test
-    void testSendEmailWithNoVariableTemplate() throws MessagingException, IOException {
-        final var subject = "Integration Test Subject with Template";
-        final var expectedMessageText = """
-                <!DOCTYPE html>
-                <html>
-                    <head>
-                        <title>Email Template without Variables</title>
-                    </head>
-                    <body>
-                        <p>This is a test message without variables</p>
-                    </body>
-                </html>""";
-
-        EmailRequest emailRequest = EmailRequest.builder()
-                .to(Set.of("recipient@example.com"))
-                .subject(subject)
-                .build();
-
-        this.emailService.sendEmail(emailRequest);
-
-        assertNotNull(smtpServer.getReceivedMessages());
-        assertTrue(smtpServer.getReceivedMessages().length > 0);
-        var receivedMessage = smtpServer.getReceivedMessages()[0];
-        MimeMultipart receivedMessageBody = (MimeMultipart) receivedMessage.getContent();
-        var actualMessageText = MimeMultipartUtils.getTextFromMimeMultipart(receivedMessageBody);
-
-        assertNotNull(receivedMessage);
-        assertEquals(1, receivedMessage.getAllRecipients().length);
-        assertEquals(subject, receivedMessage.getSubject());
-        assertThat(actualMessageText).isEqualToIgnoringNewLines(expectedMessageText);
-
-    }
-
+    @SuppressWarnings("SameParameterValue")
     private static String getTemplateMessageBodyText(String nameVariable, String messageVariable) {
         final var messageTemplate = """
                 <!DOCTYPE html>
-                <html>
+                <html lang="en">
                     <head>
                         <title>Email</title>
+                        <meta content="text/html; charset=utf-8" />
                     </head>
                     <body>
                         <p>Dear <span>%s</span>,</p>

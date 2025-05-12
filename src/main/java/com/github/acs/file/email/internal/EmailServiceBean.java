@@ -2,10 +2,12 @@ package com.github.acs.file.email.internal;
 
 import com.github.acs.file.email.EmailRequest;
 import com.github.acs.file.email.EmailService;
+import com.github.acs.file.email.EmailServiceException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -21,9 +23,18 @@ public class EmailServiceBean implements EmailService {
     private final EmailTemplateProcessor emailTemplateProcessor;
 
     @Override
-    public void sendEmail(EmailRequest emailRequest) throws MessagingException {
-        MimeMessage message = createMimeMessage(emailRequest);
-        this.mailSender.send(message);
+    public void sendEmail(EmailRequest emailRequest) throws EmailServiceException {
+        try {
+            MimeMessage message = createMimeMessage(emailRequest);
+            this.mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new EmailServiceException("Error creating email message", e);
+        } catch (MailSendException e) {
+            throw new EmailServiceException("Error sending email", e);
+        } catch (Exception e) {
+            throw new EmailServiceException("Unexpected error occurred while sending email", e);
+        }
+
     }
 
     String setEmailText(final EmailRequest emailRequest) {

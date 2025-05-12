@@ -1,7 +1,6 @@
 package com.github.acs.file.email;
 
 import com.github.acs.file.email.internal.ValidEmailRequest;
-import jakarta.validation.constraints.NotEmpty;
 import lombok.Builder;
 import lombok.Getter;
 

@@ -1,17 +1,16 @@
 package com.github.acs.file.email.internal;
 
 import com.github.acs.file.email.EmailRequest;
-import jakarta.mail.MessagingException;
+import com.github.acs.file.email.EmailServiceException;
 import jakarta.mail.internet.MimeMessage;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.Validation;
-import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Map;
 import java.util.Set;
@@ -21,6 +20,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.times;
 
+@ActiveProfiles("test")
 class EmailServiceBeanTest {
 
     @Mock
@@ -37,12 +37,9 @@ class EmailServiceBeanTest {
 
     private MimeMessage mimeMessage;
 
-    private Validator validator;
-
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        this.validator = Validation.buildDefaultValidatorFactory().getValidator();
         this.mimeMessage = mock(MimeMessage.class);
 
         when(emailTemplateProcessor.setEmailText(any(EmailTemplateRequest.class))).thenReturn("This is a test message");
@@ -51,7 +48,7 @@ class EmailServiceBeanTest {
     }
 
     @Test
-    void testSendEmailWithValidBodyInputs() throws MessagingException {
+    void testSendEmailWithValidBodyInputs() throws EmailServiceException {
         EmailRequest emailRequest = EmailRequest.builder()
                 .to(Set.of("recipient@example.com"))
                 .subject("Test Subject")
@@ -63,7 +60,7 @@ class EmailServiceBeanTest {
     }
 
     @Test
-    void testSendEmailWithValidTemplateWithoutVariables() throws MessagingException {
+    void testSendEmailWithValidTemplateWithoutVariables() throws EmailServiceException {
         EmailRequest emailRequest = EmailRequest.builder()
                 .to(Set.of("recipient@example.com"))
                 .subject("Test Subject")
@@ -75,7 +72,7 @@ class EmailServiceBeanTest {
     }
 
     @Test
-    void testSendEmailWithValidTemplateVariables() throws MessagingException {
+    void testSendEmailWithValidTemplateVariables() throws EmailServiceException {
         EmailRequest emailRequest = EmailRequest.builder()
                 .to(Set.of("recipient@example.com"))
                 .subject("Test Subject")
@@ -84,6 +81,38 @@ class EmailServiceBeanTest {
 
         emailService.sendEmail(emailRequest);
         verify(mailSender, times(1)).send(this.mimeMessage);
+    }
+
+    @Test
+    void testSendingEmailException() {
+        EmailRequest emailRequest = EmailRequest.builder()
+                .to(Set.of("recipient@example.com"))
+                .subject("Test Subject")
+                .body("Test Body")
+                .build();
+
+        doThrow(new MailSendException("Unable to send email")).when(this.mailSender).send(any(MimeMessage.class));
+
+        EmailServiceException exception = assertThrows(EmailServiceException.class, () ->
+            this.emailService.sendEmail(emailRequest)
+        );
+        assertEquals("Error sending email", exception.getMessage());
+    }
+
+    @Test
+    void testCreateMessageException() {
+        EmailRequest emailRequest = EmailRequest.builder()
+                .to(Set.of("recipient@example.com"))
+                .subject("Test Subject")
+                .body("Test Body")
+                .build();
+
+        doThrow(new RuntimeException("Unable to send email")).when(this.mailSender).send(any(MimeMessage.class));
+
+        EmailServiceException exception = assertThrows(EmailServiceException.class, () ->
+            this.emailService.sendEmail(emailRequest));
+
+        assertEquals("Unexpected error occurred while sending email", exception.getMessage());
     }
 
 }

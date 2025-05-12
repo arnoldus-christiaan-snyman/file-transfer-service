@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.thymeleaf.ThymeleafAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+
 import java.util.Map;
 
 
@@ -13,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(classes = EmailTemplateProcessor.class)
 @ImportAutoConfiguration(ThymeleafAutoConfiguration.class)
+@ActiveProfiles("test")
 class EmailTemplateProcessorTest {
 
     @Autowired
@@ -26,9 +29,10 @@ class EmailTemplateProcessorTest {
 
         String expectedResult = """
                 <!DOCTYPE html>
-                <html>
+                <html lang="en">
                     <head>
                         <title>Email Template without Variables</title>
+                        <meta content="text/html; charset=utf-8" />
                     </head>
                     <body>
                         <p>This is a test message without variables</p>
@@ -50,9 +54,10 @@ class EmailTemplateProcessorTest {
 
         String expectedResult = """
                 <!DOCTYPE html>
-                <html>
+                <html lang="en">
                     <head>
                         <title>Email</title>
+                        <meta content="text/html; charset=utf-8" />
                     </head>
                     <body>
                         <p>Dear <span>John Snow</span>,</p>
