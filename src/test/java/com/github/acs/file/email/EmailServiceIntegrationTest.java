@@ -3,12 +3,14 @@ package com.github.acs.file.email;
 import com.github.acs.file.email.internal.EmailServiceBean;
 import com.github.acs.file.email.internal.EmailProperties;
 import com.github.acs.file.email.util.MimeMultipartUtils;
+import com.icegreen.greenmail.store.FolderException;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMultipart;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.thymeleaf.ThymeleafAutoConfiguration;
@@ -47,6 +49,15 @@ class EmailServiceIntegrationTest {
     @AfterAll
     static void stopSmtpServer() {
         smtpServer.stop();
+    }
+
+    @BeforeEach
+    void setEmailService() throws FolderException {
+        clearEmailBox();
+    }
+
+    private static void clearEmailBox() throws FolderException {
+        smtpServer.purgeEmailFromAllMailboxes();
     }
 
     @Autowired

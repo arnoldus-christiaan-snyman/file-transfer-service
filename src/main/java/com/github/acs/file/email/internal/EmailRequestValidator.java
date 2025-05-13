@@ -13,65 +13,96 @@ public class EmailRequestValidator implements ConstraintValidator<ValidEmailRequ
             "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$"
     );
 
+    private final SequencedSet<String> violations;
+
+    public EmailRequestValidator() {
+        this.violations = new LinkedHashSet<>();
+    }
+
     @Override
     public boolean isValid(EmailRequest emailRequest, ConstraintValidatorContext context) {
-        boolean hasInvalidRecipientAddress = isInvalidEmail(emailRequest.getTo(), true);
-        boolean hasInvalidCCAddress = isInvalidEmail(emailRequest.getCc(), false);
-        boolean hasInvalidBCCAddress = isInvalidEmail(emailRequest.getBcc(), false);
+        this.violations.clear();
+        validateEmailRecipients(emailRequest);
+        validateEmailSubject(emailRequest);
+        validateBodyAndTemplateConstraints(emailRequest);
 
-        boolean hasBody = emailRequest.getBody() != null && !emailRequest.getBody().isEmpty();
-        boolean isMissingSubject = emailRequest.getSubject() == null || emailRequest.getSubject().isEmpty();
-        boolean hasTemplateName = emailRequest.getTemplateName() != null && !emailRequest.getTemplateName().isEmpty();
-        boolean hasTemplateVariables = emailRequest.getTemplateVariables() != null && !emailRequest.getTemplateVariables().isEmpty();
+        return evaluateViolations(context);
+    }
 
-        SequencedSet<String> violations = new LinkedHashSet<>();
-        if(hasInvalidRecipientAddress) {
-            violations.add("The 'to' recipient field is missing or have one or more invalid email(s)");
+    private void validateEmailRecipients(EmailRequest emailRequest) {
+        final String invalidEmailAddressMessage = "The '%s' recipient field has one or more invalid email(s)";
+        if(!isFieldValid(emailRequest.getTo())) {
+            this.addViolationMessage("At least one valid 'to' recipient is required");
+        }else if(isInvalidEmail(emailRequest.getTo(), true)) {
+            this.addViolationMessage(invalidEmailAddressMessage, "to");
         }
 
-        if(hasInvalidCCAddress) {
-            violations.add("The 'cc' recipient field has one or more invalid email(s)");
+        if(isInvalidEmail(emailRequest.getCc(), false)) {
+            this.addViolationMessage(invalidEmailAddressMessage, "cc");
         }
 
-        if(hasInvalidBCCAddress) {
-            violations.add("The 'bcc' recipient field has one or more invalid email(s)");
+        if(isInvalidEmail(emailRequest.getBcc(), false)) {
+            this.addViolationMessage(invalidEmailAddressMessage, "bcc");
         }
+    }
 
-        if(isMissingSubject) {
-            violations.add("The 'subject' field is required.");
+    private void validateEmailSubject(EmailRequest emailRequest) {
+        if(!isFieldValid(emailRequest.getSubject())) {
+            this.addViolationMessage("The 'subject' field is required");
         }
+    }
 
-        if (hasBody && hasTemplateName) {
-            violations.add("Only the 'body' or 'templateName' can be set, not both");
-        }
-
-        if (hasBody && hasTemplateVariables) {
-            violations.add("If 'body' is set, 'templateVariables' must be empty");
-        }
+    private void validateBodyAndTemplateConstraints(EmailRequest emailRequest) {
+        boolean hasBody = isFieldValid(emailRequest.getBody());
+        boolean hasTemplateName = isFieldValid(emailRequest.getTemplateName());
+        boolean hasTemplateVariables = isFieldValid(emailRequest.getTemplateVariables());
 
         if (!(hasBody || (hasTemplateName || hasTemplateVariables))) {
-            violations.add("At least a 'body' or 'templateName' or 'templateVariables' must be set");
+            this.addViolationMessage("At least a 'body' or 'templateName' or 'templateVariables' must be set");
+        } else if (hasBody && hasTemplateName) {
+            this.addViolationMessage("Only the 'body' or 'templateName' can be set, not both");
+        } else if (hasBody && hasTemplateVariables) {
+            this.addViolationMessage("If 'body' is set, 'templateVariables' must be empty");
         }
-
-        if(!violations.isEmpty()) {
-            setViolationMessage(context, violations);
-            return false;
-        }
-        return true;
     }
 
     public boolean isInvalidEmail(Collection<String> emailAddressCollection, boolean required) {
-        if (emailAddressCollection == null || emailAddressCollection.isEmpty()) {
+        if (!isFieldValid(emailAddressCollection)) {
             return required; // Valid if not required
         }
         return emailAddressCollection.stream().noneMatch(emailAddress -> EMAIL_PATTERN.matcher(emailAddress).matches());
     }
 
-    private void setViolationMessage(ConstraintValidatorContext context, SequencedSet<String> violations) {
-        context.disableDefaultConstraintViolation();
-        violations.reversed();
-        for(String message : violations) {
-            context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    private boolean isFieldValid(Collection<?> collection) {
+        return collection != null && !collection.isEmpty();
+    }
+
+    private boolean isFieldValid(Map<?, ?> collection) {
+        return collection != null && !collection.isEmpty();
+    }
+
+    private boolean isFieldValid(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private void addViolationMessage(String message) {
+        this.violations.add(message);
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private void addViolationMessage(String template, Object... args) {
+        this.addViolationMessage(String.format(template, args));
+    }
+
+    private boolean evaluateViolations(ConstraintValidatorContext context) {
+        boolean hasNoViolations = violations.isEmpty();
+        if(!hasNoViolations) {
+            context.disableDefaultConstraintViolation();
+            for(String message : violations) {
+                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+            }
         }
+        return hasNoViolations;
     }
 }

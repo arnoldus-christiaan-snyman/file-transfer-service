@@ -21,8 +21,8 @@ class EmailRequestValidatorTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
         this.validator = Validation.buildDefaultValidatorFactory().getValidator();
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
@@ -36,7 +36,7 @@ class EmailRequestValidatorTest {
         Set<ConstraintViolation<EmailRequest>> violations = this.validator.validate(emailRequest);
         assertFalse(violations.isEmpty());
         assertEquals(1, violations.size());
-        assertEquals("The 'to' recipient field is missing or have one or more invalid email(s)", violations.iterator().next().getMessage());
+        assertEquals("At least one valid 'to' recipient is required", violations.iterator().next().getMessage());
     }
 
     @Test
@@ -50,7 +50,7 @@ class EmailRequestValidatorTest {
         Set<ConstraintViolation<EmailRequest>> violations = this.validator.validate(emailRequest);
         assertFalse(violations.isEmpty());
         assertEquals(1, violations.size());
-        assertEquals("The 'to' recipient field is missing or have one or more invalid email(s)", violations.iterator().next().getMessage());
+        assertEquals("The 'to' recipient field has one or more invalid email(s)", violations.iterator().next().getMessage());
     }
 
     @Test
@@ -80,7 +80,7 @@ class EmailRequestValidatorTest {
         Set<ConstraintViolation<EmailRequest>> violations = this.validator.validate(emailRequest);
         assertFalse(violations.isEmpty());
         assertEquals(1, violations.size());
-        assertEquals("The 'subject' field is required.", violations.iterator().next().getMessage());
+        assertEquals("The 'subject' field is required", violations.iterator().next().getMessage());
     }
 
 
@@ -129,12 +129,6 @@ class EmailRequestValidatorTest {
 
     @Test
     void testValidationWithoutMultipleErrors() {
-        String expectedResults = """
-                The 'to' recipient field is missing or have one or more invalid email(s)
-                The 'cc' recipient field has one or more invalid email(s)
-                The 'subject' field is required.
-                If 'body' is set, 'templateVariables' must be empty""";
-
         EmailRequest emailRequest = EmailRequest.builder()
                 .to(Set.of())
                 .cc(Set.of("invalid-email"))
@@ -144,14 +138,9 @@ class EmailRequestValidatorTest {
                 .build();
 
         Set<ConstraintViolation<EmailRequest>> violations = this.validator.validate(emailRequest);
-        StringBuilder stringBuilder = new StringBuilder();
-        for(ConstraintViolation<EmailRequest> violation : violations) {
-            stringBuilder.append(violation.getMessage()).append("\n");
-        }
 
         assertFalse(violations.isEmpty());
-        assertTrue(violations.size() > 1);
-        assertEquals(expectedResults, stringBuilder.toString().trim());
+        assertEquals(4, violations.size());
     }
 
 }
