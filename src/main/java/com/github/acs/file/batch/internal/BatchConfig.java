@@ -13,7 +13,7 @@ public final class BatchConfig {
     @Bean
     public Job fileTransferBatchJob(JobRepository jobRepository, Step step, JobNotificationListener listener) {
         return new JobBuilder("fileTransferBatchJob", jobRepository)
-                .listner()
+                //.listner()
                 .start(step)
                 .next(step)
                 .build();

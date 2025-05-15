@@ -3,6 +3,8 @@ package com.github.acs.file.email;
 import com.github.acs.file.email.internal.EmailServiceBean;
 import com.github.acs.file.email.internal.EmailProperties;
 import com.github.acs.file.email.util.MimeMultipartUtils;
+import com.github.acs.file.email.util.TestEmailTemplate;
+import com.github.acs.file.email.util.TestTemplateVariables;
 import com.icegreen.greenmail.store.FolderException;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
@@ -15,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.thymeleaf.ThymeleafAutoConfiguration;
 import org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration;
-import com.github.acs.file.email.internal.EmailTemplateProcessor;
+import com.github.acs.file.email.internal.template.EmailTemplateProcessor;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -40,7 +42,7 @@ class EmailServiceIntegrationTest {
 
     @BeforeAll
     static void setupSmtpServer() {
-        ServerSetup serverSetup = new ServerSetup(25, "localhost", "smtp");
+        var serverSetup = new ServerSetup(25, "localhost", "smtp");
         smtpServer = new GreenMail(serverSetup);
         smtpServer.setUser("username", "password");
         smtpServer.start();
@@ -68,7 +70,7 @@ class EmailServiceIntegrationTest {
         final var subject = "Integration Test Subject with Template";
         final var messageBody = "This is a test email.";
 
-        EmailRequest emailRequest = EmailRequest.builder()
+        var emailRequest = EmailRequest.builder()
                 .to(Set.of("recipient@example.com"))
                 .subject(subject)
                 .body(messageBody)
@@ -79,7 +81,7 @@ class EmailServiceIntegrationTest {
         assertNotNull(smtpServer.getReceivedMessages());
         assertTrue(smtpServer.getReceivedMessages().length > 0);
         var receivedMessage = smtpServer.getReceivedMessages()[0];
-        MimeMultipart receivedMessageBody = (MimeMultipart) receivedMessage.getContent();
+        var receivedMessageBody = (MimeMultipart) receivedMessage.getContent();
         var body = MimeMultipartUtils.getTextFromMimeMultipart(receivedMessageBody);
 
         assertNotNull(receivedMessage);
@@ -95,12 +97,21 @@ class EmailServiceIntegrationTest {
         final var messageVariable = "You know nothing";
         final var expectedMessageText = getTemplateMessageBodyText(nameVariable, messageVariable);
 
-        EmailRequest emailRequest = EmailRequest.builder()
-                .to(Set.of("recipient@example.com"))
-                .subject(subject)
-                .templateVariables(
+        var emailTemplateVariables = TestTemplateVariables.builder()
+                .variables(
                         Map.of("name", nameVariable, "message", messageVariable)
                 )
+                .build();
+
+        var emailTemplate = TestEmailTemplate.builder()
+                .templateName("email-template")
+                .templateVariables(emailTemplateVariables)
+                .build();
+
+        var emailRequest = EmailRequest.builder()
+                .to(Set.of("recipient@example.com"))
+                .subject(subject)
+                .template(emailTemplate)
                 .build();
 
         this.emailService.sendEmail(emailRequest);
@@ -108,7 +119,7 @@ class EmailServiceIntegrationTest {
         assertNotNull(smtpServer.getReceivedMessages());
         assertTrue(smtpServer.getReceivedMessages().length > 0);
         var receivedMessage = smtpServer.getReceivedMessages()[0];
-        MimeMultipart receivedMessageBody = (MimeMultipart) receivedMessage.getContent();
+        var receivedMessageBody = (MimeMultipart) receivedMessage.getContent();
         var actualMessageText = MimeMultipartUtils.getTextFromMimeMultipart(receivedMessageBody);
 
         assertNotNull(receivedMessage);

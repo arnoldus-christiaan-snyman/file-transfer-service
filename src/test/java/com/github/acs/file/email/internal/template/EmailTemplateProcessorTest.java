@@ -1,5 +1,8 @@
-package com.github.acs.file.email.internal;
+package com.github.acs.file.email.internal.template;
 
+import com.github.acs.file.email.util.TestEmailTemplate;
+import com.github.acs.file.email.util.TestTemplateVariables;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -23,8 +26,12 @@ class EmailTemplateProcessorTest {
 
     @Test
     void testSendEmailWithThymeleafTemplateWithoutVariables() {
-        var request = EmailTemplateRequest.builder()
+        var emailTemplate = TestEmailTemplate.builder()
                 .templateName("email-template-without-variables")
+                .build();
+
+        var request = EmailTemplateRequest.builder()
+                .template(emailTemplate)
                 .build();
 
         String expectedResult = """
@@ -47,9 +54,19 @@ class EmailTemplateProcessorTest {
 
     @Test
     void testSendEmailWithThymeleafTemplateWithVariables() {
-        var request = EmailTemplateRequest.builder()
+        var emailTemplateVariables = TestTemplateVariables.builder()
+                .variables(
+                        Map.of("name", "John Snow", "message", "You know nothing")
+                )
+                .build();
+
+        var emailTemplate = TestEmailTemplate.builder()
                 .templateName("email-template")
-                .templateVariables(Map.of("name", "John Snow", "message", "You know nothing"))
+                .templateVariables(emailTemplateVariables)
+                .build();
+
+        var request = EmailTemplateRequest.builder()
+                .template(emailTemplate)
                 .build();
 
         String expectedResult = """

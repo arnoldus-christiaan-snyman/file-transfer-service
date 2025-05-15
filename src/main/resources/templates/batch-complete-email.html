@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Batch Completed Email</title>
+    <meta content="text/html; charset=utf-8" />
+</head>
+<body>
+<p>Good <span th:text="${timeOfDay}"></span>,</p>
+<p>
+    Batch run <span th:text="${jobName}"></span>, completed at <span th:text="${completedTime}"></span>, and processed <span th:text="${passedCount}"></span> record(s).
+</p>
+</body>
+</html>

@@ -3,6 +3,8 @@ package com.github.acs.file.email.internal;
 import com.github.acs.file.email.EmailRequest;
 import com.github.acs.file.email.EmailService;
 import com.github.acs.file.email.EmailServiceException;
+import com.github.acs.file.email.internal.template.EmailTemplateProcessor;
+import com.github.acs.file.email.internal.template.EmailTemplateRequest;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.validation.Valid;
@@ -39,9 +41,8 @@ public class EmailServiceBean implements EmailService {
 
     String setEmailText(final EmailRequest emailRequest) {
         var request = EmailTemplateRequest.builder()
-                .templateName("email-template")
-                .templateVariables(emailRequest.getTemplateVariables())
-                .body(emailRequest.getBody())
+                .template(emailRequest.template())
+                .body(emailRequest.body())
                 .build();
 
         return this.emailTemplateProcessor.setEmailText(request);
@@ -52,8 +53,8 @@ public class EmailServiceBean implements EmailService {
 
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
         helper.setFrom(this.emailProperties.getFromAddress());
-        helper.setTo(emailRequest.getTo().toArray(new String[0]));
-        helper.setSubject(emailRequest.getSubject());
+        helper.setTo(emailRequest.to().toArray(new String[0]));
+        helper.setSubject(emailRequest.subject());
 
         var body = setEmailText(emailRequest);
         helper.setText(body, true);

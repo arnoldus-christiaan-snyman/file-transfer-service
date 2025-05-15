@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Batch Error Email</title>
+    <meta content="text/html; charset=utf-8" />
+</head>
+<body>
+<p>Good <span th:text="${timeOfDay}"></span>,</p>
+<p>
+    Batch run <span th:text="${jobName}"></span>, failed at <span th:text="${failureTime}"></span> with an error of <span th:text="${errorMessage}"></span>.
+    Please resolve the incident and restart batch if required.
+</p>
+</body>
+</html>
